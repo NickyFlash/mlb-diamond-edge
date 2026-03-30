@@ -32,15 +32,16 @@ jobs:
       - name: Copy cache to repo
         run: |
           mkdir -p cache/weekly cache/daily
-          # Copy from all possible locations
           find /tmp/mlb_cache -name "*.parquet" -exec cp {} cache/weekly/ \;
           echo "Files copied:"
-          ls -lh cache/weekly/ || echo "No files in weekly"
+          ls -lh cache/weekly/ || echo "No files"
 
       - name: Commit cache files
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add cache/
-          git diff --staged --quiet || git commit -m "cache: refresh $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git diff --staged --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "cache: refresh $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin main
           git push
