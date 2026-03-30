@@ -1,11 +1,8 @@
 name: MLB Cache Refresh
 
 on:
-  # Run daily at 9:00 AM ET (14:00 UTC)
   schedule:
     - cron: '0 14 * * *'
-
-  # Allow manual trigger from GitHub UI anytime
   workflow_dispatch:
 
 jobs:
@@ -21,7 +18,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -33,15 +29,14 @@ jobs:
           MLB_CACHE_DIR: /tmp/mlb_cache
         run: python scripts/fetch_cache.py
 
-      - name: Copy cache to repo cache/ folder
+      - name: Copy cache to repo
         run: |
           mkdir -p cache/daily cache/weekly
-          cp -r /tmp/mlb_cache/daily/*.parquet  cache/daily/  2>/dev/null || true
-          cp -r /tmp/mlb_cache/weekly/*.parquet cache/weekly/ 2>/dev/null || true
-          echo "Files in cache/:"
-          ls -lh cache/daily/ cache/weekly/ || true
+          cp /tmp/mlb_cache/daily/*.parquet  cache/daily/  2>/dev/null || true
+          cp /tmp/mlb_cache/weekly/*.parquet cache/weekly/ 2>/dev/null || true
+          ls -lh cache/weekly/ || true
 
-      - name: Commit and push cache files
+      - name: Commit cache files
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
