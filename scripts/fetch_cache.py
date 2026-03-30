@@ -96,17 +96,20 @@ def fg_url(stat_type, qual, year, start=None, end=None):
 
 
 def fetch_fg(stat_type, year, qual=1, start=None, end=None, label=''):
-    """Fetch a single FanGraphs leaderboard with retry."""
+    """Fetch a single FanGraphs leaderboard with retry and longer delays."""
     url = fg_url(stat_type, qual, year, start, end)
-    for attempt in range(3):
+    for attempt in range(5):
         try:
-            time.sleep(1.5 + random.uniform(0, 1))
-            r = requests.get(url, headers=_headers(), timeout=25)
+            # Longer delays between attempts — FG rate limits aggressively
+            wait = [3, 8, 15, 30, 60][attempt] + random.uniform(1, 3)
+            if attempt > 0:
+                print(f"    Retry {attempt}/4 — waiting {wait:.0f}s")
+            time.sleep(wait)
+            r = requests.get(url, headers=_headers(), timeout=30)
             if r.status_code == 200:
                 rows = r.json().get('data', [])
                 if rows:
                     df = pd.DataFrame(rows)
-                    # Normalize pct columns
                     for col in ['K%', 'BB%', 'SwStr%']:
                         if col in df.columns:
                             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -118,16 +121,21 @@ def fetch_fg(stat_type, year, qual=1, start=None, end=None, label=''):
                     print(f"    ⚠️  FG {stat_type} {year} {label}: empty response")
                     return pd.DataFrame()
             elif r.status_code == 429:
-                wait = float(r.headers.get('Retry-After', 15))
+                wait = float(r.headers.get('Retry-After', 30)) + random.uniform(5, 10)
                 print(f"    Rate limited — waiting {wait:.0f}s")
                 time.sleep(wait)
+            elif r.status_code == 403:
+                print(f"    ⚠️  FG {stat_type} {year} {label}: HTTP 403 (blocked)")
+                if attempt < 4:
+                    continue
+                return pd.DataFrame()
             else:
                 print(f"    ⚠️  FG {stat_type} {year} {label}: HTTP {r.status_code}")
                 return pd.DataFrame()
         except Exception as e:
             print(f"    ⚠️  FG {stat_type} {year} {label}: {str(e)[:60]}")
-            if attempt < 2:
-                time.sleep(5)
+            if attempt < 4:
+                time.sleep(10)
     return pd.DataFrame()
 
 
@@ -266,6 +274,7 @@ def run():
     save(df, f'pit_ytd_{LAST_YEAR}')
 
     print(f"\n📡 FanGraphs {LAST_YEAR} — Hitters (LY baseline):")
+    time.sleep(random.uniform(8, 12))
     df = fetch_fg('bat', LAST_YEAR, qual=1, label='YTD')
     save(df, f'bat_ytd_{LAST_YEAR}', weekly=True)
     save(df, f'bat_ytd_{LAST_YEAR}')
