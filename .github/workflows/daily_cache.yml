@@ -43,5 +43,4 @@ jobs:
           git add cache/
           git diff --staged --quiet && echo "Nothing to commit" && exit 0
           git commit -m "cache: refresh $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin main
-          git push
+          git push --force origin main
