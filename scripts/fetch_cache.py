@@ -87,7 +87,7 @@ def fg_url(stat_type, qual, year, start=None, end=None):
     url = (f"https://www.fangraphs.com/api/leaders/major-league/data"
            f"?age=&pos=all&stats={stat_type}&lg=all&qual={qual}"
            f"&season={year}&season1={year}&ind=0&team=0"
-           f"&pageitems=500&pagenum=1&sortdir=default&sortstat=WAR")
+           f"&pageitems=2000&pagenum=1&sortdir=default&sortstat=WAR")
     if start:
         url += f"&startdate={start}&enddate={end}"
     elif year < CURRENT_YEAR:
@@ -221,6 +221,34 @@ def fetch_savant(stat_type, year):
     return pd.DataFrame()
 
 
+def fetch_fg_team_bat(year):
+    """Fetch team-level batting stats from FanGraphs team=0,ts endpoint."""
+    today = datetime.now().strftime('%Y-%m-%d')
+    url = (f"https://www.fangraphs.com/api/leaders/major-league/data"
+           f"?age=&pos=all&stats=bat&lg=all&qual=0"
+           f"&season={year}&season1={year}&ind=0&team=0,ts"
+           f"&pageitems=30&pagenum=1&sortdir=default&sortstat=wRC"
+           f"&startdate={year}-01-01&enddate={today}")
+    try:
+        time.sleep(random.uniform(3, 6))
+        r = requests.get(url, headers=_headers(), timeout=25)
+        if r.status_code == 200:
+            rows = r.json().get('data', [])
+            if rows and len(rows) >= 10:
+                df = pd.DataFrame(rows)
+                for col in ['K%', 'BB%']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
+                        if df[col].dropna().mean() > 1.0:
+                            df[col] = df[col] / 100.0
+                print(f"    ✅ FG team bat {year}: {len(df)} teams")
+                return df
+        print(f"    ⚠️  FG team bat {year}: HTTP {r.status_code}")
+    except Exception as e:
+        print(f"    ⚠️  FG team bat {year}: {str(e)[:60]}")
+    return pd.DataFrame()
+
+
 # ── Main fetch sequence ──────────────────────────────────────
 def run():
     print(f"\n{'='*55}")
@@ -269,13 +297,13 @@ def run():
     # ── Last year (always needed for Phase 1 fallback) ───────
     print(f"\n{'─'*55}")
     print(f"📡 FanGraphs {LAST_YEAR} — Pitchers (LY baseline):")
-    df = fetch_fg('pit', LAST_YEAR, qual=1, label='YTD')
+    df = fetch_fg('pit', LAST_YEAR, qual=0, label='YTD')
     save(df, f'pit_ytd_{LAST_YEAR}', weekly=True)
     save(df, f'pit_ytd_{LAST_YEAR}')
 
     print(f"\n📡 FanGraphs {LAST_YEAR} — Hitters (LY baseline):")
     time.sleep(random.uniform(8, 12))
-    df = fetch_fg('bat', LAST_YEAR, qual=1, label='YTD')
+    df = fetch_fg('bat', LAST_YEAR, qual=0, label='YTD')
     save(df, f'bat_ytd_{LAST_YEAR}', weekly=True)
     save(df, f'bat_ytd_{LAST_YEAR}')
 
@@ -299,6 +327,12 @@ def run():
     print(f"\n📡 Savant {LAST_YEAR} — Hitters (LY baseline):")
     df = fetch_savant('bat', LAST_YEAR)
     save(df, f'sv_bat_{LAST_YEAR}', weekly=True)
+
+    print(f"\n📡 FanGraphs {LAST_YEAR} — Team Batting (LY baseline):")
+    df = fetch_fg_team_bat(LAST_YEAR)
+    if not df.empty:
+        save(df, f'bat_team_{LAST_YEAR}', weekly=True)
+        save(df, f'bat_team_{LAST_YEAR}')
 
     print(f"\n{'='*55}")
     print(f"✅ Cache refresh complete — {datetime.now().strftime('%H:%M:%S')}")
