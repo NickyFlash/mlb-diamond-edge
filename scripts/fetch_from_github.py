@@ -14,6 +14,7 @@ Usage in Colab:
 
 import os
 import requests
+from datetime import datetime
 
 def fetch_github_cache(repo, cache_weekly_dir, branch='main'):
     """
@@ -28,6 +29,7 @@ def fetch_github_cache(repo, cache_weekly_dir, branch='main'):
     base_url = f"https://raw.githubusercontent.com/{repo}/{branch}/cache/weekly"
     
     # Files we want from GitHub
+    today = datetime.now().strftime('%Y-%m-%d')
     files_to_fetch = [
         f'pit_ytd_{2025}_weekly.parquet',
         f'bat_ytd_{2025}_weekly.parquet',
@@ -41,6 +43,11 @@ def fetch_github_cache(repo, cache_weekly_dir, branch='main'):
         f'bp_fg_ytd_{2026}_weekly.parquet',
         f'plat_l_{2026}_weekly.parquet',
         f'plat_r_{2026}_weekly.parquet',
+        f'bat_team_{2025}_weekly.parquet',
+        f'bat_team_{2026}_weekly.parquet',
+        # L30 rolling data -- saved as daily files
+        f'pit_l30_{2026}_{today}.parquet',
+        f'bat_l30_{2026}_{today}.parquet',
     ]
     
     from datetime import datetime
