@@ -273,6 +273,20 @@ def run():
         save(df, f'bat_ytd_{CURRENT_YEAR}', weekly=True)
         save(df, f'bat_ytd_{CURRENT_YEAR}')
 
+        print(f"\n📡 FanGraphs {CURRENT_YEAR} — Pitchers (L30):")
+        time.sleep(random.uniform(8, 12))
+        l30_start = (datetime.now()-timedelta(days=30)).strftime('%Y-%m-%d')
+        today_str  = datetime.now().strftime('%Y-%m-%d')
+        df = fetch_fg('pit', CURRENT_YEAR, qual=1, label='L30',
+                      start=l30_start, end=today_str)
+        save(df, f'pit_l30_{CURRENT_YEAR}', weekly=False)
+
+        print(f"\n📡 FanGraphs {CURRENT_YEAR} — Hitters (L30):")
+        time.sleep(random.uniform(8, 12))
+        df = fetch_fg('bat', CURRENT_YEAR, qual=1, label='L30',
+                      start=l30_start, end=today_str)
+        save(df, f'bat_l30_{CURRENT_YEAR}', weekly=False)
+
         print(f"\n📡 FanGraphs {CURRENT_YEAR} — Bullpen Relief:")
         df = fetch_fg_team_relief(CURRENT_YEAR)
         save(df, f'bp_fg_ytd_{CURRENT_YEAR}', weekly=True)
