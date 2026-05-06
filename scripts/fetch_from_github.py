@@ -50,7 +50,6 @@ def fetch_github_cache(repo, cache_weekly_dir, branch='main'):
         f'bat_l30_{2026}_{today}.parquet',
     ]
     
-    from datetime import datetime
     now = datetime.now().timestamp()
     stale_threshold = 20 * 3600  # 20 hours
     
